@@ -1,0 +1,2480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Erasmus+ Virtual Museum - Change Yourself, Not the Climate</title>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;600;800;900&family=Roboto:wght@300;400;500;700&display=swap');
+
+    :root{
+      --primary:#4caf50;
+      --secondary:#03a9f4;
+      --accent:#ffeb3b;
+      --dark:#1e1e1e;
+      --light:#f5f5f5;
+      --danger:#ff5252;
+    }
+
+    html, body {
+      margin:0; padding:0; width:100%; height:100%;
+      overflow:hidden;
+      background:#000;
+      font-family: 'Montserrat', sans-serif;
+      user-select:none;
+    }
+    canvas { display:block; width:100vw; height:100vh; }
+
+    #ui-layer{
+      position:absolute; inset:0;
+      z-index:10;
+      pointer-events:none;
+    }
+
+    /* --- SPLASH / OPENING --- */
+    #splash-screen{
+      position:absolute; inset:0;
+      background: linear-gradient(135deg, rgba(76,175,80,.95) 0%, rgba(3,169,244,.95) 100%);
+      display:flex; flex-direction:column; justify-content:center; align-items:center;
+      pointer-events:auto;
+      transition: opacity 1.1s ease-in-out;
+      backdrop-filter: blur(10px);
+      z-index:100;
+    }
+    .splash-content{
+      width:min(980px, 92vw);
+      background: rgba(255,255,255,0.12);
+      border:1px solid rgba(255,255,255,0.28);
+      padding:52px;
+      border-radius:28px;
+      box-shadow:0 25px 60px rgba(0,0,0,0.25);
+      text-align:center;
+      color:#fff;
+      transform: translateY(16px);
+      opacity:0;
+      animation: floatUp .85s ease-out forwards;
+    }
+    @keyframes floatUp{
+      to { transform: translateY(0); opacity:1; }
+    }
+
+    .splash-topline{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      margin-bottom:18px;
+      flex-wrap:wrap;
+    }
+    .tag{
+      font-size:.95rem;
+      letter-spacing:3px;
+      color: var(--accent);
+      font-weight:900;
+      opacity:.98;
+      text-transform:uppercase;
+    }
+    .eu-badge{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      padding:10px 14px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,0.28);
+      background: rgba(0,0,0,0.10);
+      backdrop-filter: blur(6px);
+      font-family:'Roboto',sans-serif;
+      font-size:.92rem;
+      color: rgba(255,255,255,0.95);
+      white-space:nowrap;
+    }
+    .eu-flag{
+      width:34px;
+      height:22px;
+      border-radius:4px;
+      overflow:hidden;
+      box-shadow: 0 10px 24px rgba(0,0,0,0.18);
+      flex: 0 0 auto;
+    }
+
+    .splash-content h1{
+      font-size: clamp(2.05rem, 4.0vw, 3.6rem);
+      margin:0 0 14px 0;
+      font-weight: 900;
+      line-height:1.06;
+      text-shadow:2px 2px 12px rgba(0,0,0,0.25);
+    }
+    .splash-content p{
+      font-family:'Roboto', sans-serif;
+      font-size: clamp(1rem, 1.25vw, 1.12rem);
+      line-height:1.75;
+      font-weight:300;
+      margin: 0 0 16px 0;
+      color: rgba(255,255,255,0.92);
+    }
+    .project-code{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size: .95rem;
+      color: rgba(255,255,255,0.92);
+      background: rgba(0,0,0,0.20);
+      display:inline-block;
+      padding: 8px 12px;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      margin: 6px 0 0 0;
+    }
+
+    #loading-wrap{
+      margin: 18px auto 10px auto;
+      width: min(520px, 90%);
+      background: rgba(255,255,255,0.15);
+      border: 1px solid rgba(255,255,255,0.25);
+      border-radius: 999px;
+      overflow:hidden;
+      height: 12px;
+    }
+    #loading-bar{
+      height:100%;
+      width:0%;
+      background: linear-gradient(90deg, var(--accent), #fff);
+      transition: width .15s linear;
+    }
+    #loading-text{
+      margin: 10px 0 0 0;
+      font-size:.92rem;
+      color: rgba(255,255,255,0.95);
+      font-family:'Roboto', sans-serif;
+    }
+
+    .btn{
+      background:#fff;
+      color: var(--dark);
+      border:none;
+      padding: 15px 42px;
+      font-size:1.05rem;
+      font-weight:900;
+      border-radius: 999px;
+      cursor:pointer;
+      transition: all .23s cubic-bezier(.25,.8,.25,1);
+      box-shadow: 0 12px 26px rgba(0,0,0,.18);
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:10px;
+      pointer-events:auto;
+      margin-top: 14px;
+    }
+    .btn:hover{
+      transform: translateY(-4px) scale(1.04);
+      background: var(--accent);
+    }
+    .btn:active{ transform: translateY(-2px) scale(1.02); }
+
+    /* --- HUD --- */
+    #hud{ display:none; position:absolute; inset:0; pointer-events:none; }
+    #crosshair{
+      position:absolute; top:50%; left:50%;
+      transform: translate(-50%,-50%);
+      width:6px; height:6px;
+      background:#fff;
+      border-radius:50%;
+      box-shadow:0 0 6px rgba(0,0,0,.55);
+      transition: all .18s ease;
+      opacity:.95;
+    }
+    #crosshair.active{
+      width:12px; height:12px;
+      background: var(--accent);
+      box-shadow:0 0 14px rgba(255,235,59,.55);
+    }
+
+    .panel{
+      position:absolute;
+      background: rgba(255,255,255,0.88);
+      border: 1px solid rgba(255,255,255,0.55);
+      backdrop-filter: blur(14px);
+      border-radius: 16px;
+      padding: 14px 16px;
+      color: var(--dark);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+      pointer-events:none;
+    }
+
+    #location-panel{
+      top: 18px; left: 18px;
+      min-width: 260px;
+      border-left: 6px solid var(--primary);
+    }
+    #location-panel h2{ margin:0 0 4px 0; font-size: 1.18rem; font-weight: 900; letter-spacing:.2px; }
+    #location-panel p{ margin:0; font-size:.82rem; color:#5d5d5d; font-weight:800; text-transform:uppercase; letter-spacing:1px; }
+
+    #controls-panel{
+      bottom: 18px; left: 18px;
+      font-family:'Roboto', sans-serif;
+      font-size: .80rem;
+      max-width: 360px;
+      opacity: .92;
+    }
+    .control-key{
+      display:inline-block;
+      background:#f2f2f2;
+      border:1px solid #d5d5d5;
+      border-bottom: 3px solid #c7c7c7;
+      border-radius: 6px;
+      padding: 1px 8px;
+      margin: 2px 5px 2px 0;
+      font-weight: 900;
+      font-size: .82rem;
+    }
+
+    #interaction-prompt{
+      position:absolute;
+      left:50%;
+      bottom: 18%;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.68);
+      color:#fff;
+      padding: 12px 18px;
+      border-radius: 999px;
+      font-size: .98rem;
+      font-weight: 900;
+      display:none;
+      border:1px solid rgba(255,255,255,0.18);
+      box-shadow: 0 18px 45px rgba(0,0,0,0.32);
+      animation: pulse 2s infinite;
+      pointer-events:none;
+      white-space:nowrap;
+    }
+    @keyframes pulse{
+      0% { transform: translateX(-50%) scale(1); box-shadow:0 0 0 0 rgba(255,235,59,.35); }
+      60%{ transform: translateX(-50%) scale(1.05); box-shadow:0 0 20px 0 rgba(255,235,59,0); }
+      100%{ transform: translateX(-50%) scale(1); box-shadow:0 0 0 0 rgba(255,235,59,0); }
+    }
+
+    #fps-counter{
+      position:absolute; top:10px; right:12px;
+      color:#b9ffb9;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size: 13px;
+      text-shadow: 1px 1px 0 rgba(0,0,0,0.8);
+      pointer-events:none;
+      opacity:.95;
+    }
+
+    #top-right-panel{
+      position:absolute;
+      top: 18px; right: 18px;
+      pointer-events:none;
+    }
+    .corner-badge{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      background: rgba(255,255,255,0.88);
+      border: 1px solid rgba(255,255,255,0.55);
+      backdrop-filter: blur(14px);
+      border-radius: 16px;
+      padding: 12px 14px;
+      box-shadow: 0 12px 32px rgba(0,0,0,0.12);
+      color:#1e1e1e;
+      max-width: 420px;
+    }
+    .corner-badge .eu-flag{
+      width:38px;
+      height:26px;
+      box-shadow:none;
+      border:1px solid rgba(0,0,0,0.06);
+    }
+    .corner-badge .t1{
+      font-weight: 900;
+      font-size: 1rem;
+      line-height: 1.15;
+    }
+    .corner-badge .t2{
+      font-family:'Roboto',sans-serif;
+      font-size:.86rem;
+      color:#4a4a4a;
+      line-height: 1.2;
+      margin-top:4px;
+    }
+    .corner-badge .mono{
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      font-size:.82rem;
+      color:#3f3f3f;
+      margin-top:4px;
+      display:block;
+    }
+    .corner-badge .co{
+      font-family:'Roboto',sans-serif;
+      font-size:.82rem;
+      color:#2f2f2f;
+      opacity:.9;
+      margin-top:4px;
+    }
+
+    .hidden-badges{ display:none; }
+
+    /* --- MODAL --- */
+    #modal-container{
+      position:absolute; inset:0;
+      background: rgba(0,0,0,0.82);
+      backdrop-filter: blur(10px);
+      display:none;
+      justify-content:center;
+      align-items:center;
+      pointer-events:auto;
+      z-index:200;
+    }
+    .modal-box{
+      width: min(900px, 92vw);
+      max-height: 82vh;
+      background: #fff;
+      border-radius: 20px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      box-shadow: 0 28px 80px rgba(0,0,0,0.5);
+      transform: scale(.96);
+      transition: transform .22s ease;
+    }
+    #modal-container.show .modal-box{ transform: scale(1); }
+
+    .modal-header{
+      background: linear-gradient(90deg, var(--primary), #2ecc71);
+      color:#fff;
+      padding: 18px 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .modal-header h2{
+      margin:0;
+      font-size: 1.45rem;
+      font-weight: 900;
+      letter-spacing:.2px;
+    }
+    .close-btn{
+      width:42px; height:42px;
+      border-radius:50%;
+      border:none;
+      background: rgba(255,255,255,0.22);
+      color:#fff;
+      cursor:pointer;
+      font-size:1.7rem;
+      transition: background .2s ease;
+    }
+    .close-btn:hover{ background: rgba(255,255,255,0.36); }
+
+    .modal-body{
+      padding: 20px 22px 26px 22px;
+      overflow:auto;
+      font-family:'Roboto',sans-serif;
+      font-size: 1.05rem;
+      line-height: 1.8;
+      color:#2b2b2b;
+    }
+    .modal-body img{
+      width:100%;
+      border-radius: 14px;
+      margin: 10px 0 16px 0;
+      border:1px solid #ededed;
+    }
+    .modal-body h3{
+      margin-top: 0;
+      color: var(--primary);
+    }
+
+    /* --- ADMIN PANEL --- */
+    #admin-panel{
+      position:absolute;
+      bottom: 18px;
+      right: 18px;
+      background: rgba(255,255,255,0.92);
+      backdrop-filter: blur(14px);
+      border-radius: 16px;
+      padding: 14px;
+      border: 1px solid rgba(0,0,0,0.1);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.15);
+      pointer-events:auto;
+      z-index:50;
+      display:none;
+    }
+    .admin-header{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      margin-bottom:12px;
+    }
+    .admin-header h3{
+      margin:0;
+      font-size:1rem;
+      font-weight:900;
+      color:var(--primary);
+    }
+    .admin-close{
+      background:none;
+      border:none;
+      font-size:1.2rem;
+      cursor:pointer;
+      color:#666;
+    }
+    .admin-section{
+      margin-bottom:12px;
+      padding-bottom:12px;
+      border-bottom:1px solid #eee;
+    }
+    .admin-section h4{
+      margin:0 0 8px 0;
+      font-size:0.9rem;
+      color:#333;
+    }
+    .admin-input{
+      width:100%;
+      padding:8px;
+      border:1px solid #ddd;
+      border-radius:6px;
+      margin-bottom:6px;
+      font-family:'Roboto',sans-serif;
+    }
+    .admin-btn{
+      background:var(--primary);
+      color:white;
+      border:none;
+      padding:6px 12px;
+      border-radius:6px;
+      cursor:pointer;
+      font-weight:600;
+      margin-right:6px;
+    }
+    .admin-btn:hover{
+      opacity:0.9;
+    }
+    .admin-btn.danger{
+      background:var(--danger);
+    }
+    .board-selector{
+      display:flex;
+      flex-wrap:wrap;
+      gap:6px;
+      margin-bottom:12px;
+    }
+    .board-tab{
+      background:#f0f0f0;
+      border:none;
+      padding:6px 10px;
+      border-radius:12px;
+      font-size:0.8rem;
+      cursor:pointer;
+    }
+    .board-tab.active{
+      background:var(--primary);
+      color:white;
+    }
+
+    #admin-toggle{
+      position:absolute;
+      bottom: 18px;
+      right: 18px;
+      background: rgba(0,0,0,0.5);
+      color:white;
+      border:none;
+      border-radius:999px;
+      padding:8px 14px;
+      font-size:0.8rem;
+      backdrop-filter:blur(4px);
+      cursor:pointer;
+      pointer-events:auto;
+      z-index:49;
+    }
+
+    #error-overlay{
+      display:none;
+      position:absolute; inset:0;
+      background: rgba(0,0,0,0.9);
+      color:#fff;
+      z-index:9999;
+      padding: 22px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono","Courier New", monospace;
+      overflow:auto;
+      pointer-events:auto;
+    }
+    #error-overlay h2{ margin:0 0 8px 0; font-family:'Montserrat',sans-serif; }
+    #error-overlay pre{ white-space:pre-wrap; color:#ffd4d4; }
+
+    #mobile-hint{
+      display:none;
+      position:absolute;
+      left:50%; top: 10px;
+      transform: translateX(-50%);
+      background: rgba(0,0,0,0.55);
+      border:1px solid rgba(255,255,255,0.18);
+      color:#fff;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-family:'Roboto',sans-serif;
+      font-size:.90rem;
+      z-index: 30;
+      pointer-events:none;
+    }
+  </style>
+
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+      "three/examples/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+
+<body>
+  <div id="ui-layer">
+    <div id="splash-screen">
+      <div class="splash-content">
+        <div class="splash-topline">
+          <div class="tag">ERASMUS+ KA210-SCH</div>
+
+          <div class="eu-badge" title="Co-funded by the European Union">
+            <svg class="eu-flag" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-label="EU Flag">
+              <rect width="60" height="40" fill="#003399"/>
+              <g fill="#FFCC00" transform="translate(30,20)">
+                <circle cx="0" cy="-14" r="1.6"/>
+                <circle cx="7" cy="-12" r="1.6"/>
+                <circle cx="12" cy="-7" r="1.6"/>
+                <circle cx="14" cy="0" r="1.6"/>
+                <circle cx="12" cy="7" r="1.6"/>
+                <circle cx="7" cy="12" r="1.6"/>
+                <circle cx="0" cy="14" r="1.6"/>
+                <circle cx="-7" cy="12" r="1.6"/>
+                <circle cx="-12" cy="7" r="1.6"/>
+                <circle cx="-14" cy="0" r="1.6"/>
+                <circle cx="-12" cy="-7" r="1.6"/>
+                <circle cx="-7" cy="-12" r="1.6"/>
+              </g>
+            </svg>
+            <span><b>Co-funded by the EU</b></span>
+          </div>
+        </div>
+
+        <h1>“Change Yourself,<br/>Not the Climate”<br/>Virtual Museum</h1>
+
+        <p>
+          This web-based 3D space is a <b>virtual museum</b> prepared within the scope of the Erasmus+ 
+          <b>“Change Yourself, Not the Climate”</b> project. Visitors can interact with boards to access 
+          information about climate change, solutions, and sustainability.
+        </p>
+        <div class="project-code">
+          Erasmus+ 2025-1-FR01-KA210-SCH-000359204
+        </div>
+
+        <div id="loading-wrap"><div id="loading-bar"></div></div>
+        <div id="loading-text">Preparing assets... %0</div>
+
+        <button id="start-btn" class="btn" style="display:none;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polygon points="5 3 19 12 5 21 5 3"></polygon>
+          </svg>
+          ENTER MUSEUM
+        </button>
+
+        <div style="margin-top:10px; opacity:.92; font-family:'Roboto',sans-serif; font-size:.92rem;">
+          Tip: Approach boards and press <b>E</b> to view content
+        </div>
+      </div>
+    </div>
+
+    <div id="hud">
+      <div id="crosshair"></div>
+
+      <div id="location-panel" class="panel">
+        <h2 id="loc-title">Entrance</h2>
+        <p id="loc-desc">Virtual Museum</p>
+      </div>
+
+      <div id="top-right-panel">
+        <div class="corner-badge" title="Co-funded by the European Union">
+          <svg class="eu-flag" viewBox="0 0 60 40" xmlns="http://www.w3.org/2000/svg" aria-label="EU Flag">
+            <rect width="60" height="40" fill="#003399"/>
+            <g fill="#FFCC00" transform="translate(30,20)">
+              <circle cx="0" cy="-14" r="1.6"/>
+              <circle cx="7" cy="-12" r="1.6"/>
+              <circle cx="12" cy="-7" r="1.6"/>
+              <circle cx="14" cy="0" r="1.6"/>
+              <circle cx="12" cy="7" r="1.6"/>
+              <circle cx="7" cy="12" r="1.6"/>
+              <circle cx="0" cy="14" r="1.6"/>
+              <circle cx="-7" cy="12" r="1.6"/>
+              <circle cx="-12" cy="7" r="1.6"/>
+              <circle cx="-14" cy="0" r="1.6"/>
+              <circle cx="-12" cy="-7" r="1.6"/>
+              <circle cx="-7" cy="-12" r="1.6"/>
+            </g>
+          </svg>
+          <div>
+            <div class="t1">Erasmus+ Virtual Museum</div>
+            <div class="t2">Change Yourself, Not the Climate</div>
+            <span class="mono">2025-1-FR01-KA210-SCH-000359204</span>
+            <div class="co"><b>Co-funded by the EU</b></div>
+          </div>
+        </div>
+
+        <div class="hidden-badges">
+          <span id="quality-badge">High</span>
+          <span id="fx-badge">On</span>
+          <span id="hdri-badge">Testing</span>
+        </div>
+      </div>
+
+      <div id="controls-panel" class="panel">
+        <div style="margin-bottom:6px; font-weight:900; color:var(--primary); font-size:.92rem; text-transform:uppercase;">
+          Controls
+        </div>
+        <div><span class="control-key">W</span><span class="control-key">A</span><span class="control-key">S</span><span class="control-key">D</span> Move</div>
+        <div style="margin-top:4px;"><span class="control-key">Mouse</span> Look Around (when locked)</div>
+        <div style="margin-top:4px;"><span class="control-key">Shift</span> Run <span class="control-key" style="margin-left:8px;">Space</span> Jump</div>
+        <div style="margin-top:4px;"><span class="control-key">E</span> Interact / Board</div>
+      </div>
+
+      <div id="interaction-prompt">
+        <span style="color:var(--accent);">[E]</span> Press to examine
+      </div>
+
+      <div id="fps-counter">FPS: --</div>
+      <div id="mobile-hint">Mobile: drag to look, double tap to move forward</div>
+    </div>
+
+    <div id="modal-container">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 id="modal-title">Title</h2>
+          <button class="close-btn" id="close-modal">×</button>
+        </div>
+        <div class="modal-body" id="modal-content">Content...</div>
+      </div>
+    </div>
+
+    <button id="admin-toggle" onclick="toggleAdminPanel()">⚙️ Admin</button>
+
+    <div id="admin-panel">
+      <div class="admin-header">
+        <h3>ADMIN PANEL - Board Editor</h3>
+        <button class="admin-close" onclick="toggleAdminPanel()">×</button>
+      </div>
+      
+      <div class="board-selector" id="board-selector"></div>
+      
+      <div class="admin-section">
+        <h4>Edit Board Content</h4>
+        <input type="text" id="board-title" class="admin-input" placeholder="Title">
+        <textarea id="board-content" class="admin-input" rows="4" placeholder="Content (HTML allowed)"></textarea>
+        <input type="text" id="board-image" class="admin-input" placeholder="Image URL">
+        <button class="admin-btn" onclick="updateCurrentBoard()">Update Board</button>
+      </div>
+      
+      <div class="admin-section">
+        <h4>Add New Board</h4>
+        <input type="text" id="new-board-key" class="admin-input" placeholder="Board ID (e.g., new_topic)">
+        <input type="text" id="new-board-title" class="admin-input" placeholder="Title">
+        <textarea id="new-board-content" class="admin-input" rows="3" placeholder="Content"></textarea>
+        <input type="text" id="new-board-image" class="admin-input" placeholder="Image URL">
+        <input type="number" id="new-board-pos-x" class="admin-input" placeholder="Position X" value="0">
+        <input type="number" id="new-board-pos-z" class="admin-input" placeholder="Position Z" value="0">
+        <select id="new-board-color" class="admin-input">
+          <option value="0x4caf50">Green</option>
+          <option value="0x2196f3">Blue</option>
+          <option value="0xff5252">Red</option>
+          <option value="0xffaa00">Orange</option>
+          <option value="0xaa55ff">Purple</option>
+        </select>
+        <button class="admin-btn" onclick="addNewBoard()">Add Board</button>
+      </div>
+      
+      <div class="admin-section">
+        <h4>Export/Import</h4>
+        <button class="admin-btn" onclick="exportBoards()">Export Boards</button>
+        <input type="file" id="import-file" accept=".json" style="display:none">
+        <button class="admin-btn" onclick="document.getElementById('import-file').click()">Import Boards</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="error-overlay">
+    <h2>Runtime Error</h2>
+    <div>The browser may not be able to access WebGL/ESM/CDN resources. Error output:</div>
+    <pre id="error-text"></pre>
+  </div>
+
+<script type="module">
+import * as THREE from "three";
+import { RGBELoader } from "three/examples/loaders/RGBELoader.js";
+import { EffectComposer } from "three/examples/postprocessing/EffectComposer.js";
+import { RenderPass } from "three/examples/postprocessing/RenderPass.js";
+import { ShaderPass } from "three/examples/postprocessing/ShaderPass.js";
+import { UnrealBloomPass } from "three/examples/postprocessing/UnrealBloomPass.js";
+import { SSAOPass } from "three/examples/postprocessing/SSAOPass.js";
+import { FXAAShader } from "three/examples/shaders/FXAAShader.js";
+
+/* -------------------- GLOBALS -------------------- */
+let scene, camera, renderer, composer, clock;
+let frames = 0, prevTime = performance.now();
+
+/* Camera slightly higher */
+const GRAVITY = 30;
+const JUMP_FORCE = 12;
+const PLAYER_HEIGHT = 2.05;   // camera eye height
+const PLAYER_RADIUS = 0.5;
+
+/* Step-up support */
+const STEP_HEIGHT = 0.75;     // step-up for building interior differences
+const STEP_CHECK_FORWARD = 0.18;
+
+let isLocked = false;
+let isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+let dragLook = { active:false, lastX:0, lastY:0 };
+
+const keys = { w:false, a:false, s:false, d:false, shift:false, space:false };
+let currentInteractable = null;
+
+let targetPixelRatio = Math.min(window.devicePixelRatio, 2);
+let dynamicScale = 1.0;
+let avgFps = 60;
+
+const player = {
+  position: new THREE.Vector3(0, 10, 120),
+  velocity: new THREE.Vector3(),
+  direction: new THREE.Vector3(),
+  onGround: false,
+  speed: 6.0,
+  runMultiplier: 1.8,
+  pitch: new THREE.Object3D(),
+  yaw: new THREE.Object3D(),
+  bobTimer: 0
+};
+
+const interactables = [];
+const animatedObjects = {
+  windTurbines: [],
+  boardScreens: [],
+  boardCanvases: [],
+  water: null
+};
+
+const floors = [];
+
+/* -------------------- COLLISION GRID -------------------- */
+const colliders = [];
+const grid = new Map();
+const GRID_CELL = 20;
+
+function cellKey(x, z){
+  const cx = Math.floor(x / GRID_CELL);
+  const cz = Math.floor(z / GRID_CELL);
+  return cx + "," + cz;
+}
+function addToGrid(colliderIndex, box){
+  const min = box.min, max = box.max;
+  const cminx = Math.floor(min.x / GRID_CELL);
+  const cmaxx = Math.floor(max.x / GRID_CELL);
+  const cminz = Math.floor(min.z / GRID_CELL);
+  const cmaxz = Math.floor(max.z / GRID_CELL);
+
+  const keys = [];
+  for(let x=cminx; x<=cmaxx; x++){
+    for(let z=cminz; z<=cmaxz; z++){
+      const k = x + "," + z;
+      if(!grid.has(k)) grid.set(k, []);
+      grid.get(k).push(colliderIndex);
+      keys.push(k);
+    }
+  }
+  colliders[colliderIndex].gridKeys = keys;
+}
+function getNearbyColliderIndices(pos){
+  const cx = Math.floor(pos.x / GRID_CELL);
+  const cz = Math.floor(pos.z / GRID_CELL);
+  const out = [];
+  for(let x=cx-1; x<=cx+1; x++){
+    for(let z=cz-1; z<=cz+1; z++){
+      const k = x + "," + z;
+      const arr = grid.get(k);
+      if(arr) out.push(...arr);
+    }
+  }
+  return out;
+}
+
+/* -------------------- UI HELPERS -------------------- */
+const el = (id)=>document.getElementById(id);
+function showError(err){
+  el("error-overlay").style.display = "block";
+  el("error-text").textContent = (err && err.stack) ? err.stack : String(err);
+}
+window.addEventListener("error", (e)=>showError(e.error || e.message));
+window.addEventListener("unhandledrejection", (e)=>showError(e.reason));
+
+/* ============================================================================
+   EXHIBITION DATA - ENGLISH TRANSLATION
+============================================================================ */
+let exhibitionData = {
+  intro: {
+    title: "Climate Change: Basic Concepts",
+    image: "https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>What is Climate Change?</h3>
+      <p>Climate change refers to long-term shifts in temperatures, precipitation patterns, and extreme weather events. The current rapid acceleration is primarily caused by increased human-made greenhouse gas emissions.</p>
+      <ul>
+        <li><b>Greenhouse effect:</b> Gases like CO₂ and CH₄ trap heat in the atmosphere.</li>
+        <li><b>Feedback loops:</b> Melting ice reduces albedo, accelerating warming.</li>
+        <li><b>Extreme events:</b> Heatwaves, floods, and droughts may become more frequent.</li>
+      </ul>
+    `
+  },
+  carbon: {
+    title: "Carbon Footprint & Reduction Strategies",
+    image: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Carbon Footprint</h3>
+      <p>Carbon footprint expresses the greenhouse gas impact of individual/organizational activities as CO₂ equivalent (CO₂e).</p>
+      <ul>
+        <li><b>Energy:</b> Insulation, LED, efficient appliances, renewable energy.</li>
+        <li><b>Transport:</b> Public transit, walking/biking, electric vehicles, fewer flights.</li>
+        <li><b>Consumption:</b> Reduce–reuse–repair–recycle.</li>
+      </ul>
+      <p><i>Goal:</i> "The cheapest energy is the energy not consumed."</p>
+    `
+  },
+  renewable: {
+    title: "Renewable Energy Sources",
+    image: "https://images.unsplash.com/photo-1509395176047-4a66953fd231?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Renewable Energy</h3>
+      <p>Renewable sources generate energy from natural processes that replenish themselves on short timescales.</p>
+      <ul>
+        <li><b>Solar:</b> PV panels generate electricity; rooftop/field applications.</li>
+        <li><b>Wind:</b> Turbines convert kinetic energy to electricity.</li>
+        <li><b>Geothermal:</b> Underground heat – electricity/heating.</li>
+        <li><b>Hydro:</b> Dams/rivers; ecosystem impacts must be carefully planned.</li>
+        <li><b>Biomass:</b> Waste/organic sources; sustainable supply required.</li>
+      </ul>
+    `
+  },
+  transport: {
+    title: "Sustainable Transportation",
+    image: "https://images.unsplash.com/photo-1520975958225-5e7b2a2b7b19?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Green Mobility</h3>
+      <p>Reducing transport emissions requires both technological and behavioral changes.</p>
+      <ul>
+        <li><b>Walking/Cycling:</b> Lowest carbon for short distances.</li>
+        <li><b>Public transit:</b> Reduces per capita emissions.</li>
+        <li><b>Electrification:</b> More effective if grid is renewable.</li>
+        <li><b>Urban design:</b> "15-minute city" approach.</li>
+      </ul>
+    `
+  },
+  water: {
+    title: "Water Crisis & Smart Water Management",
+    image: "https://images.unsplash.com/photo-1526401485004-2aa6b7c1b3b6?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Water Management</h3>
+      <p>Climate change may increase drought and water stress. Water efficiency becomes critical.</p>
+      <ul>
+        <li><b>Rainwater harvesting:</b> Storage + landscape irrigation.</li>
+        <li><b>Greywater:</b> Treatment and reuse of shower/sink water.</li>
+        <li><b>Drip irrigation:</b> Reduces evaporation losses.</li>
+        <li><b>Water footprint:</b> Total water impact of products/services.</li>
+      </ul>
+    `
+  },
+  biodiversity: {
+    title: "Biodiversity & Ecosystem Services",
+    image: "https://images.unsplash.com/photo-1468327768560-75b778cbb551?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Biodiversity</h3>
+      <p>Ecosystems support life through services like water purification, pollination, and erosion control.</p>
+      <ul>
+        <li><b>Habitat loss:</b> Increases extinction risk for species.</li>
+        <li><b>Climate stress:</b> Species distribution may shift.</li>
+        <li><b>Native species:</b> Using local species in landscaping reduces water and maintenance needs.</li>
+      </ul>
+    `
+  },
+  zerowaste: {
+    title: "Zero Waste & Circular Economy",
+    image: "https://images.unsplash.com/photo-1524593166156-312f362cada0?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Circular Economy</h3>
+      <p>Transition from linear "take-make-dispose" model to a system where resources remain in circulation.</p>
+      <ul>
+        <li><b>Design:</b> Easy repair, modular products.</li>
+        <li><b>Composting:</b> Converting organic waste back to soil.</li>
+        <li><b>Recycling:</b> Proper sorting increases efficiency.</li>
+      </ul>
+    `
+  },
+  food: {
+    title: "Sustainable Nutrition",
+    image: "https://images.unsplash.com/photo-1466692476868-aef1dfb1e735?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Food & Climate</h3>
+      <p>Food systems have significant shares in emissions, land use, and water consumption.</p>
+      <ul>
+        <li><b>Reduce waste:</b> Planned shopping, proper storage.</li>
+        <li><b>Seasonal/local:</b> Reduces transport and cold chain impact.</li>
+        <li><b>Plant-based:</b> Generally lower footprint.</li>
+      </ul>
+    `
+  },
+  greenbuilding: {
+    title: "Green Building Standards (LEED / BREEAM)",
+    image: "https://images.unsplash.com/photo-1523413450953-01890738e2a5?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Green Building</h3>
+      <p>Certification systems measure and encourage improvement of buildings' environmental impact.</p>
+      <ul>
+        <li><b>Energy efficiency:</b> Reducing heating-cooling loads.</li>
+        <li><b>Water efficiency:</b> Low-flow fixtures + recovery.</li>
+        <li><b>Materials:</b> Low carbon, local supply, recycled content.</li>
+        <li><b>Indoor air:</b> Low-VOC products.</li>
+      </ul>
+    `
+  },
+  efficiency: {
+    title: "Energy Efficiency: The Fastest Climate Solution",
+    image: "https://images.unsplash.com/photo-1581091870622-7e0cdfbb6795?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Efficiency</h3>
+      <p>Efficiency reduces costs, lowers emissions, and increases comfort.</p>
+      <ul>
+        <li><b>Insulation:</b> Reduces heat loss, downsizes system capacity.</li>
+        <li><b>LED + sensors:</b> Reduces lighting consumption.</li>
+        <li><b>Heat pump:</b> Highly efficient electric heating/cooling.</li>
+      </ul>
+    `
+  },
+  materials: {
+    title: "Low-Carbon Materials",
+    image: "https://images.unsplash.com/photo-1519710164239-da123dc03ef4?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Material Selection</h3>
+      <p>Building materials play a critical role in terms of "embodied carbon".</p>
+      <ul>
+        <li><b>Wood:</b> Low carbon with sustainable forest management.</li>
+        <li><b>Recycled:</b> Major savings in steel/aluminum.</li>
+        <li><b>LCA:</b> Life cycle assessment measures total impact.</li>
+      </ul>
+    `
+  },
+  architecture: {
+    title: "Adaptation & Resilience",
+    image: "https://images.unsplash.com/photo-1523413651479-597eb2da0ad6?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Adaptation</h3>
+      <p>While mitigation reduces emissions, adaptation strengthens resilience to climate risks.</p>
+      <ul>
+        <li><b>Shading:</b> Reduces heat island effect.</li>
+        <li><b>Permeable surfaces:</b> Reduces flood risk.</li>
+        <li><b>Green spaces:</b> Improves microclimate.</li>
+      </ul>
+    `
+  },
+  recycling: {
+    title: "Climate Solutions: Individual to Institutional",
+    image: "https://images.unsplash.com/photo-1528323273322-d81458248d40?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Solution Package</h3>
+      <p>Climate crisis cannot be solved with a single method; multi-layered transformation is needed.</p>
+      <ul>
+        <li><b>Policy:</b> Carbon pricing, standards.</li>
+        <li><b>Technology:</b> Renewables, storage, smart grid.</li>
+        <li><b>Social transformation:</b> Consumption habits, education.</li>
+      </ul>
+    `
+  },
+  climate: {
+    title: "Climate Justice & Social Impacts",
+    image: "https://images.unsplash.com/photo-1569163139394-de44cb8142a2?auto=format&fit=crop&w=1400&q=70",
+    content: `
+      <h3>Climate Justice</h3>
+      <p>Climate change may have more severe consequences for low-income communities.</p>
+      <ul>
+        <li><b>Health:</b> Heatwaves, air pollution effects.</li>
+        <li><b>Livelihood:</b> Agriculture and water resources.</li>
+        <li><b>Just transition:</b> Fair sharing of transformation costs.</li>
+      </ul>
+    `
+  }
+};
+
+/* -------------------- ADMIN PANEL FUNCTIONS -------------------- */
+let currentBoardKey = "intro";
+
+function toggleAdminPanel() {
+  const panel = el("admin-panel");
+  const toggle = el("admin-toggle");
+  if (panel.style.display === "none" || !panel.style.display) {
+    panel.style.display = "block";
+    toggle.style.opacity = "0.5";
+    refreshBoardSelector();
+    loadBoardData(currentBoardKey);
+  } else {
+    panel.style.display = "none";
+    toggle.style.opacity = "1";
+  }
+}
+
+function refreshBoardSelector() {
+  const selector = el("board-selector");
+  selector.innerHTML = "";
+  Object.keys(exhibitionData).forEach(key => {
+    const btn = document.createElement("button");
+    btn.className = "board-tab" + (key === currentBoardKey ? " active" : "");
+    btn.textContent = exhibitionData[key].title.substring(0, 15) + (exhibitionData[key].title.length > 15 ? "..." : "");
+    btn.onclick = () => {
+      currentBoardKey = key;
+      refreshBoardSelector();
+      loadBoardData(key);
+    };
+    selector.appendChild(btn);
+  });
+}
+
+function loadBoardData(key) {
+  const data = exhibitionData[key];
+  if (data) {
+    el("board-title").value = data.title || "";
+    el("board-content").value = data.content || "";
+    el("board-image").value = data.image || "";
+  }
+}
+
+function updateCurrentBoard() {
+  if (!currentBoardKey) return;
+  
+  exhibitionData[currentBoardKey] = {
+    ...exhibitionData[currentBoardKey],
+    title: el("board-title").value,
+    content: el("board-content").value,
+    image: el("board-image").value
+  };
+  
+  // Update all boards with this key
+  updateBoardTextures(currentBoardKey);
+  
+  alert("Board updated successfully!");
+}
+
+function updateBoardTextures(key) {
+  const data = exhibitionData[key];
+  if (!data) return;
+  
+  // Find all boards with this key and update their textures
+  animatedObjects.boardCanvases.forEach((canvasPack, index) => {
+    // This is a simplified approach - in reality you'd need to map canvases to board keys
+    // For now, we'll just recreate the texture for the active board
+  });
+  
+  // Refresh the current board's texture
+  recreateBoardTexture(key);
+}
+
+function recreateBoardTexture(key) {
+  // Find the board mesh with this key and update its texture
+  // This would require storing board references by key
+  // For simplicity, we'll just reload the page to show changes
+  // In a production app, you'd want to update dynamically
+  location.reload();
+}
+
+function addNewBoard() {
+  const key = el("new-board-key").value.trim().replace(/\s+/g, '_').toLowerCase();
+  if (!key) {
+    alert("Please enter a board ID");
+    return;
+  }
+  
+  if (exhibitionData[key]) {
+    alert("Board ID already exists!");
+    return;
+  }
+  
+  const newBoard = {
+    title: el("new-board-title").value || "New Board",
+    content: el("new-board-content").value || "<p>New content</p>",
+    image: el("new-board-image").value || "",
+  };
+  
+  exhibitionData[key] = newBoard;
+  
+  // Create physical board in the world
+  const x = parseFloat(el("new-board-pos-x").value) || 0;
+  const z = parseFloat(el("new-board-pos-z").value) || 0;
+  const color = parseInt(el("new-board-color").value);
+  
+  createInfoBoard(key, x, 5, z, 0, color);
+  
+  refreshBoardSelector();
+  alert("New board added!");
+}
+
+function exportBoards() {
+  const dataStr = JSON.stringify(exhibitionData, null, 2);
+  const blob = new Blob([dataStr], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'museum_boards.json';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importBoards(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      exhibitionData = data;
+      alert("Boards imported successfully! Reloading...");
+      location.reload();
+    } catch (err) {
+      alert("Invalid JSON file!");
+    }
+  };
+  reader.readAsText(file);
+}
+
+// Make admin functions global
+window.toggleAdminPanel = toggleAdminPanel;
+window.updateCurrentBoard = updateCurrentBoard;
+window.addNewBoard = addNewBoard;
+window.exportBoards = exportBoards;
+window.importBoards = (e) => importBoards(e);
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('import-file').addEventListener('change', importBoards);
+});
+
+/* -------------------- FIXED LOADING -------------------- */
+const ASSETS = {
+  hdri: "https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/equirectangular/royal_esplanade_1k.hdr",
+  grassColor: "https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/terrain/grasslight-big.jpg",
+  grassNormal:"https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/terrain/grasslight-big-nm.jpg",
+  rockColor:  "https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/stone.jpg",
+  woodColor:  "https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/hardwood2_diffuse.jpg",
+  woodNormal: "https://cdn.jsdelivr.net/gh/mrdoob/three.js@r128/examples/textures/hardwood2_bump.jpg"
+};
+
+function setProgress(p, msg){
+  const pp = Math.max(0, Math.min(100, Math.floor(p)));
+  el("loading-bar").style.width = pp + "%";
+  el("loading-text").textContent = msg || `Preparing assets... %${pp}`;
+}
+function enableStart(){
+  el("start-btn").style.display = "inline-flex";
+  setProgress(100, "Ready! You can enter the museum.");
+}
+
+function loadTextureSafe(loader, url, opts){
+  return new Promise((resolve)=>{
+    let done = false;
+    const timeoutMs = (opts && opts.timeoutMs) ? opts.timeoutMs : 8000;
+    const timer = setTimeout(()=>{
+      if(done) return;
+      done = true;
+      resolve(null);
+    }, timeoutMs);
+
+    loader.load(url,
+      (tex)=>{
+        if(done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve(tex);
+      },
+      undefined,
+      ()=>{
+        if(done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve(null);
+      }
+    );
+  });
+}
+function loadHDRISafe(loader, url, opts){
+  return new Promise((resolve)=>{
+    let done = false;
+    const timeoutMs = (opts && opts.timeoutMs) ? opts.timeoutMs : 9000;
+    const timer = setTimeout(()=>{
+      if(done) return;
+      done = true;
+      resolve(null);
+    }, timeoutMs);
+
+    loader.load(url,
+      (hdr)=>{
+        if(done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve(hdr);
+      },
+      undefined,
+      ()=>{
+        if(done) return;
+        done = true;
+        clearTimeout(timer);
+        resolve(null);
+      }
+    );
+  });
+}
+
+el("start-btn").addEventListener("click", startGame);
+preloadAndPrepare().catch(showError);
+
+async function preloadAndPrepare(){
+  setProgress(1, "Preparing assets... %1");
+  const texLoader = new THREE.TextureLoader();
+  const hdrLoader = new RGBELoader();
+
+  const totalSteps = 6;
+  let doneSteps = 0;
+  const bump = (label)=>{
+    doneSteps++;
+    const p = 5 + (doneSteps/totalSteps)*90;
+    setProgress(p, `${label}... %${Math.floor(p)}`);
+  };
+
+  const p1 = loadTextureSafe(texLoader, ASSETS.grassColor, {timeoutMs:8000}).then((t)=>{ bump("Environment textures"); return t; });
+  const p2 = loadTextureSafe(texLoader, ASSETS.grassNormal,{timeoutMs:8000}).then((t)=>{ bump("Normal maps"); return t; });
+  const p3 = loadTextureSafe(texLoader, ASSETS.rockColor,  {timeoutMs:8000}).then((t)=>{ bump("Road texture"); return t; });
+  const p4 = loadTextureSafe(texLoader, ASSETS.woodColor,  {timeoutMs:8000}).then((t)=>{ bump("Wood texture"); return t; });
+  const p5 = loadTextureSafe(texLoader, ASSETS.woodNormal, {timeoutMs:8000}).then((t)=>{ bump("Wood normal"); return t; });
+  const p6 = loadHDRISafe(hdrLoader, ASSETS.hdri,          {timeoutMs:9000}).then((h)=>{ bump("HDRI lighting"); return h; });
+
+  const [grassMap, grassNormal, rockMap, woodMap, woodNormal, hdr] =
+    await Promise.all([p1,p2,p3,p4,p5,p6]);
+
+  const setupRepeat = (tex, repX, repY, aniso)=>{
+    if(!tex) return;
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(repX, repY);
+    if(aniso) tex.anisotropy = aniso;
+  };
+  setupRepeat(grassMap, 40, 40, 8);
+  setupRepeat(grassNormal, 40, 40, 8);
+  setupRepeat(rockMap, 6, 6, 4);
+  setupRepeat(woodMap, 2, 2, 4);
+  setupRepeat(woodNormal, 2, 2, 4);
+
+  window.__PRELOADED__ = { grassMap, grassNormal, rockMap, woodMap, woodNormal, hdr };
+  el("hdri-badge").textContent = hdr ? "On" : "Off";
+  enableStart();
+}
+
+/* -------------------- START FLOW -------------------- */
+function startGame(){
+  el("splash-screen").style.opacity = "0";
+  setTimeout(()=>{
+    el("splash-screen").style.display = "none";
+    el("hud").style.display = "block";
+    if(isMobile) el("mobile-hint").style.display = "block";
+    try{
+      init();
+      if(!isMobile) requestPointerLock();
+    }catch(err){
+      showError(err);
+    }
+  }, 980);
+}
+
+/* -------------------- INIT -------------------- */
+function init(){
+  scene = new THREE.Scene();
+  clock = new THREE.Clock();
+
+  renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:"high-performance" });
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  renderer.setPixelRatio(targetPixelRatio * dynamicScale);
+
+  renderer.outputEncoding = THREE.sRGBEncoding;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+
+  renderer.toneMappingExposure = 0.98;
+
+  renderer.physicallyCorrectLights = true;
+
+  renderer.shadowMap.enabled = true;
+  renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+
+  document.body.appendChild(renderer.domElement);
+
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.08, 1500);
+  player.yaw.position.copy(player.position);
+  player.yaw.add(player.pitch);
+  player.pitch.add(camera);
+  scene.add(player.yaw);
+
+  scene.fog = new THREE.FogExp2(0x87CEEB, 0.0022);
+  scene.background = new THREE.Color(0x87CEEB);
+
+  const pre = window.__PRELOADED__ || {};
+  if(pre.hdr){
+    pre.hdr.mapping = THREE.EquirectangularReflectionMapping;
+    scene.environment = pre.hdr;
+  }
+
+  setupLighting();
+  buildEnvironment(pre);
+  buildEcoBuilding(pre);
+  setupInteractables();
+  setupPostFX();
+
+  setupInputListeners();
+  window.addEventListener("resize", onResize, { passive:true });
+
+  animate();
+}
+
+/* -------------------- LIGHTING -------------------- */
+function setupLighting(){
+  const hemi = new THREE.HemisphereLight(0xffffff, 0x4a4a4a, 0.62);
+  hemi.position.set(0, 200, 0);
+  scene.add(hemi);
+
+  const sun = new THREE.DirectionalLight(0xfff2d6, 5.6);
+  sun.position.set(180, 280, 120);
+  sun.castShadow = true;
+  sun.shadow.mapSize.set(4096, 4096);
+  sun.shadow.camera.near = 10;
+  sun.shadow.camera.far = 900;
+  sun.shadow.camera.left = -260;
+  sun.shadow.camera.right = 260;
+  sun.shadow.camera.top = 260;
+  sun.shadow.camera.bottom = -260;
+  sun.shadow.bias = -0.00018;
+  scene.add(sun);
+
+  addPoint(0, 13.5, -32, 0xfff3dd, 42, 120);
+  addPoint(0, 14.0, -62, 0xfff3dd, 40, 120);
+  addPoint(-42, 10, -40, 0xd8ffe0, 20, 75);
+  addPoint(42, 10, -40, 0xdbe3ff, 20, 75);
+  addPoint(-20, 12.5, -40, 0xffffff, 18, 90);
+  addPoint( 20, 12.5, -40, 0xffffff, 18, 90);
+}
+function addPoint(x,y,z,color,intensity,dist){
+  const p = new THREE.PointLight(color, intensity, dist, 2);
+  p.position.set(x,y,z);
+  p.castShadow = false;
+  scene.add(p);
+}
+
+/* -------------------- POST FX -------------------- */
+function setupPostFX(){
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+
+  const ssao = new SSAOPass(scene, camera, window.innerWidth, window.innerHeight);
+  ssao.kernelRadius = 9;
+  ssao.minDistance = 0.004;
+  ssao.maxDistance = 0.10;
+  composer.addPass(ssao);
+
+  const bloom = new UnrealBloomPass(
+    new THREE.Vector2(window.innerWidth, window.innerHeight),
+    0.04,
+    0.26,
+    0.988
+  );
+  composer.addPass(bloom);
+
+  const fxaa = new ShaderPass(FXAAShader);
+  fxaa.material.uniforms["resolution"].value.set(
+    1/(window.innerWidth*renderer.getPixelRatio()),
+    1/(window.innerHeight*renderer.getPixelRatio())
+  );
+  composer.addPass(fxaa);
+
+  el("fx-badge").textContent = "On";
+}
+
+/* -------------------- BUILD ENVIRONMENT -------------------- */
+function buildEnvironment(pre){
+  const grassMap = pre.grassMap || null;
+  const grassNormal = pre.grassNormal || null;
+  const rockMap = pre.rockMap || null;
+
+  const groundGeo = new THREE.PlaneGeometry(1200, 1200, 100, 100);
+  const pos = groundGeo.attributes.position;
+
+  for(let i=0;i<pos.count;i++){
+    const x = pos.getX(i);
+    const y = pos.getY(i);
+    let z = 0;
+    const ax = Math.abs(x), ay = Math.abs(y);
+    if(ax > 140 || ay > 140){
+      z = Math.sin(x * 0.018) * Math.cos(y * 0.018) * 7.2 + Math.sin(x * 0.05) * 0.9;
+    }
+    pos.setZ(i, z);
+  }
+  groundGeo.computeVertexNormals();
+
+  const groundMat = new THREE.MeshStandardMaterial({
+    map: grassMap,
+    normalMap: grassNormal,
+    color: 0xffffff,
+    roughness: 1.0,
+    metalness: 0.0
+  });
+  groundMat.envMapIntensity = 0.0;
+
+  const ground = new THREE.Mesh(groundGeo, groundMat);
+  ground.rotation.x = -Math.PI/2;
+  ground.receiveShadow = true;
+  scene.add(ground);
+  floors.push(ground);
+
+  const pathGeo = new THREE.BoxGeometry(16, 0.22, 170);
+  const pathMat = new THREE.MeshStandardMaterial({
+    map: rockMap,
+    color: 0xffffff,
+    roughness: 1.0,
+    metalness: 0.0
+  });
+  pathMat.envMapIntensity = 0.0;
+
+  const path = new THREE.Mesh(pathGeo, pathMat);
+  path.position.set(0, 0.16, 70);
+  path.receiveShadow = true;
+  scene.add(path);
+  floors.push(path);
+
+  const waterGeo = new THREE.CircleGeometry(42, 96);
+  const waterMat = new THREE.MeshPhysicalMaterial({
+    color: 0x1a7cff,
+    transmission: 0.84,
+    opacity: 1,
+    transparent: true,
+    roughness: 0.35,
+    metalness: 0.0,
+    clearcoat: 0.18,
+    clearcoatRoughness: 0.75,
+    ior: 1.333,
+    thickness: 1.0
+  });
+  waterMat.envMapIntensity = 0.08;
+
+  const water = new THREE.Mesh(waterGeo, waterMat);
+  water.rotation.x = -Math.PI/2;
+  water.position.set(0, 0.45, 70);
+  water.receiveShadow = true;
+  scene.add(water);
+  animatedObjects.water = water;
+
+  createForest();
+  createWindTurbine(-90, 0, 60);
+  createWindTurbine(90, 0, 60);
+  createWindTurbine(-120, 0, -120);
+
+  createBenchesAndEntranceBoards();
+}
+
+function createForest(){
+  const treeCount = 380;
+
+  const trunkGeo = new THREE.CylinderGeometry(0.45, 0.85, 5.5, 10);
+  trunkGeo.translate(0, 2.75, 0);
+  const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3b2c, roughness: 0.98 });
+
+  const leavesGeo = new THREE.ConeGeometry(3.8, 8.8, 10);
+  leavesGeo.translate(0, 6.3, 0);
+  const leavesMat = new THREE.MeshStandardMaterial({ color: 0x2b5b28, roughness: 0.95 });
+
+  const trunkMesh = new THREE.InstancedMesh(trunkGeo, trunkMat, treeCount);
+  const leavesMesh = new THREE.InstancedMesh(leavesGeo, leavesMat, treeCount);
+  trunkMesh.castShadow = true;
+  trunkMesh.receiveShadow = true;
+  leavesMesh.castShadow = true;
+
+  const dummy = new THREE.Object3D();
+  let placed = 0;
+
+  while(placed < treeCount){
+    const x = (Math.random()-0.5)*950;
+    const z = (Math.random()-0.5)*950;
+
+    if(Math.abs(x) < 150 && Math.abs(z) < 150) continue;
+    if(Math.abs(x) < 18 && z > -20 && z < 180) continue;
+
+    const scale = 0.75 + Math.random()*0.8;
+    dummy.position.set(x, 0, z);
+    dummy.scale.set(scale, scale, scale);
+    dummy.rotation.y = Math.random() * Math.PI * 2;
+    dummy.updateMatrix();
+
+    trunkMesh.setMatrixAt(placed, dummy.matrix);
+    leavesMesh.setMatrixAt(placed, dummy.matrix);
+
+    const dist2 = x*x + z*z;
+    if(dist2 < 260*260){
+      const col = createStaticCollider(x, 5*scale, z, 2.2*scale, 9.0*scale, 2.2*scale);
+      col.mesh.visible = false;
+    }
+
+    placed++;
+  }
+
+  scene.add(trunkMesh);
+  scene.add(leavesMesh);
+}
+
+function createWindTurbine(x,y,z){
+  const group = new THREE.Group();
+
+  const poleGeo = new THREE.CylinderGeometry(1.0, 1.5, 42, 18);
+  const whiteMetal = new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.38, metalness: 0.55 });
+  whiteMetal.envMapIntensity = 0.10;
+
+  const pole = new THREE.Mesh(poleGeo, whiteMetal);
+  pole.position.y = 21;
+  pole.castShadow = true;
+  group.add(pole);
+
+  const motor = new THREE.Mesh(new THREE.BoxGeometry(3.2, 3.2, 6.6), whiteMetal);
+  motor.position.set(0, 42, 1);
+  motor.castShadow = true;
+  group.add(motor);
+
+  const rotor = new THREE.Group();
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(1.6,1.6,2,18), whiteMetal);
+  hub.rotation.x = Math.PI/2;
+  rotor.add(hub);
+
+  const bladeGeo = new THREE.BoxGeometry(0.9, 21, 0.22);
+  bladeGeo.translate(0, 10.5, 0);
+  for(let i=0;i<3;i++){
+    const blade = new THREE.Mesh(bladeGeo, whiteMetal);
+    blade.rotation.z = (i * Math.PI*2)/3;
+    blade.castShadow = true;
+    rotor.add(blade);
+  }
+  rotor.position.set(0, 42, 4.2);
+  group.add(rotor);
+
+  group.position.set(x,y,z);
+  scene.add(group);
+
+  animatedObjects.windTurbines.push(rotor);
+
+  const col = createStaticCollider(x, 21, z, 4.5, 44, 4.5);
+  col.mesh.visible = false;
+}
+
+function createBenchesAndEntranceBoards(){
+  const benchMat = new THREE.MeshStandardMaterial({ color: 0x2c2c2c, roughness: 0.92, metalness: 0.02 });
+  benchMat.envMapIntensity = 0.0;
+
+  const woodMat = new THREE.MeshStandardMaterial({ color: 0x8b5a2b, roughness: 0.88, metalness: 0.0 });
+  woodMat.envMapIntensity = 0.0;
+
+  function bench(x,z,rotY){
+    const g = new THREE.Group();
+    const seat = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.18, 0.9), woodMat);
+    seat.position.set(0, 0.55, 0);
+    seat.castShadow = true;
+    g.add(seat);
+
+    const back = new THREE.Mesh(new THREE.BoxGeometry(3.0, 0.9, 0.12), woodMat);
+    back.position.set(0, 1.0, -0.38);
+    back.castShadow = true;
+    g.add(back);
+
+    const leg1 = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.55, 0.9), benchMat);
+    leg1.position.set(-1.3, 0.28, 0);
+    g.add(leg1);
+    const leg2 = leg1.clone();
+    leg2.position.set(1.3, 0.28, 0);
+    g.add(leg2);
+
+    g.position.set(x, 0.0, z);
+    g.rotation.y = rotY;
+    scene.add(g);
+
+    const col = createStaticCollider(x, 0.7, z, 3.2, 1.4, 1.2);
+    col.mesh.visible = false;
+  }
+
+  bench(-7.5, 52,  Math.PI/2);
+  bench( 7.5, 52, -Math.PI/2);
+  bench(-7.5, 95,  Math.PI/2);
+  bench( 7.5, 95, -Math.PI/2);
+
+  createInfoBoard("renewable",  -10.5, 5,  62,  Math.PI/2, 0xffaa00);
+  createInfoBoard("transport",   10.5, 5,  62, -Math.PI/2, 0x00ccff);
+  createInfoBoard("zerowaste",  -10.5, 5, 110,  Math.PI/2, 0xffaa88);
+  createInfoBoard("biodiversity", 10.5, 5, 110, -Math.PI/2, 0x88aa00);
+}
+
+function buildEcoBuilding(pre){
+  const marble = new THREE.MeshStandardMaterial({
+    color: 0xf2f2f2,
+    roughness: 0.78,
+    metalness: 0.0
+  });
+  marble.envMapIntensity = 0.0;
+
+  const wallMat = new THREE.MeshStandardMaterial({
+    color: 0xf1f1f1,
+    roughness: 0.92,
+    metalness: 0.0
+  });
+  wallMat.envMapIntensity = 0.0;
+
+  const woodMat = new THREE.MeshStandardMaterial({
+    map: pre.woodMap || null,
+    normalMap: pre.woodNormal || null,
+    color: 0xffffff,
+    roughness: 0.90,
+    metalness: 0.0
+  });
+  woodMat.envMapIntensity = 0.0;
+
+  const glass = new THREE.MeshPhysicalMaterial({
+    color: 0xffffff,
+    metalness: 0.0,
+    roughness: 0.28,
+    transmission: 0.78,
+    thickness: 0.9,
+    clearcoat: 0.10,
+    clearcoatRoughness: 0.85,
+    ior: 1.5,
+    side: THREE.DoubleSide
+  });
+  glass.envMapIntensity = 0.10;
+
+  const buildGroup = new THREE.Group();
+
+  const floorGeo = new THREE.BoxGeometry(140, 1, 100);
+  const groundFloor = new THREE.Mesh(floorGeo, marble);
+  groundFloor.position.set(0, 0.5, -30);
+  groundFloor.receiveShadow = true;
+  buildGroup.add(groundFloor);
+  floors.push(groundFloor);
+
+  const innerStepMat = new THREE.MeshStandardMaterial({ color: 0xf7f7f7, roughness: 0.85, metalness: 0.0 });
+  innerStepMat.envMapIntensity = 0.0;
+
+  const stepPlatform = new THREE.Mesh(new THREE.BoxGeometry(28, 1.0, 16), innerStepMat);
+  stepPlatform.position.set(0, 1.0, 10.0);
+  stepPlatform.receiveShadow = true;
+  stepPlatform.castShadow = false;
+  buildGroup.add(stepPlatform);
+  floors.push(stepPlatform);
+
+  const riser = new THREE.Mesh(new THREE.BoxGeometry(28, 1.0, 0.6), new THREE.MeshStandardMaterial({ color: 0xeaeaea, roughness: 0.9, metalness: 0.0 }));
+  riser.material.envMapIntensity = 0.0;
+  riser.position.set(0, 0.5, 2.2);
+  buildGroup.add(riser);
+
+  createStaticCollider(0, 1.0, 10.0, 28, 1.0, 16).mesh.visible = false;
+
+  const roofMat = new THREE.MeshStandardMaterial({
+    color: 0x4a4f56,
+    roughness: 0.92,
+    metalness: 0.02
+  });
+  roofMat.envMapIntensity = 0.0;
+
+  const roof = new THREE.Mesh(floorGeo, roofMat);
+  roof.position.set(0, 20, -30);
+  roof.receiveShadow = true;
+  buildGroup.add(roof);
+
+  const ceiling = new THREE.Mesh(
+    new THREE.BoxGeometry(140, 0.6, 100),
+    new THREE.MeshStandardMaterial({
+      color: 0xf3f5f6,
+      roughness: 0.88,
+      metalness: 0.0,
+      emissive: 0xffffff,
+      emissiveIntensity: 0.02
+    })
+  );
+  ceiling.material.envMapIntensity = 0.0;
+  ceiling.position.set(0, 19.4, -30);
+  ceiling.receiveShadow = false;
+  buildGroup.add(ceiling);
+
+  for(const x of [-68, -30, 30, 68]){
+    for(const z of [18, -30, -78]){
+      const p = new THREE.Mesh(new THREE.BoxGeometry(2, 19, 2), wallMat);
+      p.position.set(x, 10, z);
+      p.castShadow = true;
+      buildGroup.add(p);
+      createStaticCollider(x, 10, z, 2, 19, 2).mesh.visible = false;
+    }
+  }
+
+  const backWall = new THREE.Mesh(new THREE.BoxGeometry(140, 19, 2), woodMat);
+  backWall.position.set(0, 10, -79);
+  backWall.castShadow = true;
+  buildGroup.add(backWall);
+  createStaticCollider(0,10,-79, 140,19,2).mesh.visible = false;
+
+  const leftGlass = new THREE.Mesh(new THREE.BoxGeometry(1, 19, 96), glass);
+  leftGlass.position.set(-69.5, 10, -30);
+  buildGroup.add(leftGlass);
+  createStaticCollider(-69.5,10,-30, 1,19,96).mesh.visible = false;
+
+  const rightGlass = new THREE.Mesh(new THREE.BoxGeometry(1, 19, 96), glass);
+  rightGlass.position.set(69.5, 10, -30);
+  buildGroup.add(rightGlass);
+  createStaticCollider(69.5,10,-30, 1,19,96).mesh.visible = false;
+
+  const frontGlassL = new THREE.Mesh(new THREE.BoxGeometry(58, 19, 1), glass);
+  frontGlassL.position.set(-39, 10, 19.5);
+  buildGroup.add(frontGlassL);
+  createStaticCollider(-39,10,19.5, 58,19,1).mesh.visible = false;
+
+  const frontGlassR = new THREE.Mesh(new THREE.BoxGeometry(58, 19, 1), glass);
+  frontGlassR.position.set(39, 10, 19.5);
+  buildGroup.add(frontGlassR);
+  createStaticCollider(39,10,19.5, 58,19,1).mesh.visible = false;
+
+  const doorTop = new THREE.Mesh(new THREE.BoxGeometry(20, 9, 1), wallMat);
+  doorTop.position.set(0, 15, 19.5);
+  doorTop.castShadow = true;
+  buildGroup.add(doorTop);
+  createStaticCollider(0,15,19.5, 20,9,1).mesh.visible = false;
+
+  const sign = createProjectDoorSign();
+  sign.position.set(0, 17.35, 20.15);
+  sign.rotation.y = 0;
+  buildGroup.add(sign);
+
+  const intWall1 = new THREE.Mesh(new THREE.BoxGeometry(2, 19, 60), wallMat);
+  intWall1.position.set(-30, 10, -50);
+  intWall1.castShadow = true;
+  buildGroup.add(intWall1);
+  createStaticCollider(-30,10,-50, 2,19,60).mesh.visible = false;
+
+  const intWall2 = new THREE.Mesh(new THREE.BoxGeometry(2, 19, 60), wallMat);
+  intWall2.position.set(30, 10, -50);
+  intWall2.castShadow = true;
+  buildGroup.add(intWall2);
+  createStaticCollider(30,10,-50, 2,19,60).mesh.visible = false;
+
+  addDownlights(buildGroup);
+  addCeilingLightStrips(buildGroup);
+  createSolarPanels(buildGroup);
+
+  scene.add(buildGroup);
+}
+
+function createProjectDoorSign(){
+  const W = 1200, H = 300;
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  const bg = ctx.createLinearGradient(0,0,W,H);
+  bg.addColorStop(0, "rgba(6,16,10,0.92)");
+  bg.addColorStop(1, "rgba(10,30,18,0.92)");
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,W,H);
+
+  const grad = ctx.createLinearGradient(0,0,W,0);
+  grad.addColorStop(0, "rgba(46, 204, 113, 0.98)");
+  grad.addColorStop(0.55, "rgba(76, 175, 80, 0.98)");
+  grad.addColorStop(1, "rgba(3, 169, 244, 0.70)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0,0,W,12);
+
+  ctx.strokeStyle = "rgba(255,255,255,0.22)";
+  ctx.lineWidth = 7;
+  ctx.strokeRect(14, 14, W-28, H-28);
+
+  ctx.textAlign = "center";
+
+  ctx.fillStyle = "rgba(255,255,255,0.98)";
+  ctx.font = "900 64px Montserrat, sans-serif";
+  ctx.fillText("Change Yourself, Not the Climate", W/2, 142);
+
+  ctx.fillStyle = "rgba(194, 255, 210, 0.96)";
+  ctx.font = "800 40px Montserrat, sans-serif";
+  ctx.fillText("Erasmus+ Virtual Museum", W/2, 196);
+
+  ctx.fillStyle = "rgba(255,235,59,0.98)";
+  ctx.font = "800 30px Roboto, sans-serif";
+  ctx.fillText("2025-1-FR01-KA210-SCH-000359204", W/2, 244);
+
+  ctx.fillStyle = "rgba(46,204,113,0.18)";
+  ctx.fillRect(18, H-18, W-36, 4);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+
+  const mat = new THREE.MeshStandardMaterial({
+    map: tex,
+    color: 0xffffff,
+    roughness: 0.62,
+    metalness: 0.0,
+    emissive: 0x0a2a18,
+    emissiveIntensity: 0.08
+  });
+  mat.envMapIntensity = 0.0;
+
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(24, 6.0), mat);
+  plane.castShadow = true;
+
+  const back = new THREE.Mesh(
+    new THREE.BoxGeometry(24.6, 6.5, 0.25),
+    new THREE.MeshStandardMaterial({ color: 0x131a16, roughness: 0.92, metalness: 0.02 })
+  );
+  back.material.envMapIntensity = 0.0;
+  back.position.z = -0.13;
+
+  const g = new THREE.Group();
+  g.add(back);
+  g.add(plane);
+  plane.position.z = 0.01;
+
+  return g;
+}
+
+function addDownlights(parent){
+  const lightMat = new THREE.MeshStandardMaterial({
+    color: 0x1b1f24,
+    roughness: 0.75,
+    metalness: 0.08,
+    emissive: 0xffffee,
+    emissiveIntensity: 0.10
+  });
+  lightMat.envMapIntensity = 0.0;
+
+  const ringGeo = new THREE.CylinderGeometry(0.35, 0.35, 0.1, 18);
+  const positions = [
+    [-40, 19.3, -40], [0, 19.3, -40], [40, 19.3, -40],
+    [-40, 19.3, -10], [0, 19.3, -10], [40, 19.3, -10],
+    [-40, 19.3, -70], [0, 19.3, -70], [40, 19.3, -70]
+  ];
+
+  positions.forEach(([x,y,z])=>{
+    const ring = new THREE.Mesh(ringGeo, lightMat);
+    ring.position.set(x,y,z);
+    parent.add(ring);
+
+    const spot = new THREE.SpotLight(0xfff3dd, 95, 30, Math.PI/7, 0.38, 1);
+    spot.position.set(x, 19.2, z);
+    spot.target.position.set(x, 0, z);
+    spot.castShadow = false;
+    scene.add(spot);
+    scene.add(spot.target);
+  });
+}
+
+function addCeilingLightStrips(parent){
+  const stripMat = new THREE.MeshStandardMaterial({
+    color: 0x111111,
+    roughness: 0.6,
+    metalness: 0.15,
+    emissive: 0x9fffc8,
+    emissiveIntensity: 0.25
+  });
+  stripMat.envMapIntensity = 0.0;
+
+  const stripGeo = new THREE.BoxGeometry(30, 0.18, 1.2);
+  const zs = [-15, -35, -55, -75];
+  zs.forEach((z, i)=>{
+    const strip = new THREE.Mesh(stripGeo, stripMat);
+    strip.position.set(0, 18.9, z);
+    strip.castShadow = false;
+    strip.receiveShadow = false;
+    parent.add(strip);
+
+    const fill = new THREE.PointLight(0xeafff2, 26, 55, 2);
+    fill.position.set(0, 18.3, z);
+    fill.castShadow = false;
+    scene.add(fill);
+
+    const fillL = new THREE.PointLight(0xeafff2, 16, 45, 2);
+    fillL.position.set(-32, 16.2, z);
+    scene.add(fillL);
+
+    const fillR = new THREE.PointLight(0xeafff2, 16, 45, 2);
+    fillR.position.set(32, 16.2, z);
+    scene.add(fillR);
+  });
+}
+
+function createSolarPanels(parent){
+  const panelMat = new THREE.MeshStandardMaterial({
+    color: 0x0a1128,
+    roughness: 0.55,
+    metalness: 0.25,
+    emissive: 0x001133,
+    emissiveIntensity: 0.22
+  });
+  panelMat.envMapIntensity = 0.05;
+
+  const panelGeo = new THREE.BoxGeometry(10, 0.2, 20);
+
+  for(let x=-50; x<=50; x+=15){
+    for(let z=-60; z<=0; z+=25){
+      const panel = new THREE.Mesh(panelGeo, panelMat);
+      panel.rotation.x = Math.PI/6;
+      panel.position.set(x, 21.55, z);
+      panel.castShadow = true;
+      parent.add(panel);
+    }
+  }
+}
+
+function createStaticCollider(x,y,z,w,h,d){
+  const mesh = new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshBasicMaterial({ visible:false }));
+  mesh.position.set(x,y,z);
+  scene.add(mesh);
+
+  const box = new THREE.Box3().setFromObject(mesh);
+  const entry = { mesh, box, gridKeys: [] };
+  const idx = colliders.push(entry) - 1;
+  addToGrid(idx, box);
+
+  return entry;
+}
+
+function setupInteractables(){
+  createInfoBoard("intro", 0, 5, -20, 0, 0x4caf50);
+  createInfoBoard("carbon", -28, 5, -40, Math.PI/2, 0xf44336);
+  createInfoBoard("architecture", 28, 5, -40, -Math.PI/2, 0x2196f3);
+  createInfoBoard("recycling", 0, 5, -77, 0, 0xffeb3b);
+
+  createInfoBoard("renewable", 15, 5, 130, -Math.PI/4, 0xffaa00);
+  createInfoBoard("transport", -15, 5, 130, Math.PI/4, 0x00ccff);
+
+  const radius = 45;
+  createInfoBoard("water", radius*Math.cos(Math.PI/4), 5, -30 + radius*Math.sin(Math.PI/4), -Math.PI/4, 0x00aaff);
+  createInfoBoard("biodiversity", radius*Math.cos(3*Math.PI/4), 5, -30 + radius*Math.sin(3*Math.PI/4), -3*Math.PI/4, 0x88aa00);
+  createInfoBoard("zerowaste", radius*Math.cos(5*Math.PI/4), 5, -30 + radius*Math.sin(5*Math.PI/4), 3*Math.PI/4, 0xffaa88);
+  createInfoBoard("food", radius*Math.cos(7*Math.PI/4), 5, -30 + radius*Math.sin(7*Math.PI/4), Math.PI/4, 0xff66aa);
+
+  createInfoBoard("climate", 25, 5, 10, -Math.PI/2, 0xff5500);
+  createInfoBoard("greenbuilding", 25, 5, -10, -Math.PI/2, 0x55aa00);
+  createInfoBoard("efficiency", -25, 5, 10, Math.PI/2, 0xaa55ff);
+  createInfoBoard("materials", -25, 5, -10, Math.PI/2, 0xffaa55);
+
+  createIndoorGarden(-50, 1, -50);
+}
+
+function createIndoorGarden(x,y,z){
+  const planter = new THREE.Mesh(
+    new THREE.BoxGeometry(22, 1.2, 22),
+    new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.92, metalness: 0.0 })
+  );
+  planter.material.envMapIntensity = 0.0;
+  planter.position.set(x,y,z);
+  planter.castShadow = true;
+  planter.receiveShadow = true;
+  scene.add(planter);
+  createStaticCollider(x, y+0.6, z, 22, 1.2, 22).mesh.visible = false;
+
+  const bushGeo = new THREE.DodecahedronGeometry(2.2);
+  const bushMat = new THREE.MeshStandardMaterial({ color: 0x2e7d32, roughness: 0.95, metalness: 0.0 });
+  bushMat.envMapIntensity = 0.0;
+
+  for(let i=0;i<14;i++){
+    const bush = new THREE.Mesh(bushGeo, bushMat);
+    bush.position.set(x + (Math.random()-0.5)*16, y+1.2, z + (Math.random()-0.5)*16);
+    bush.scale.setScalar(0.55 + Math.random()*1.1);
+    bush.castShadow = true;
+    scene.add(bush);
+  }
+}
+
+function makeBoardImageTexture(imageUrl, glowColor){
+  const w = 1024, h = 640;
+  const canvas = document.createElement("canvas");
+  canvas.width = w; canvas.height = h;
+  const ctx = canvas.getContext("2d");
+
+  const grad = ctx.createLinearGradient(0, 0, w, h);
+  grad.addColorStop(0, "rgba(10,18,30,1)");
+  grad.addColorStop(1, "rgba(2,24,34,1)");
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, w, h);
+
+  const r = (glowColor >> 16) & 255;
+  const g = (glowColor >> 8) & 255;
+  const b = glowColor & 255;
+  ctx.fillStyle = `rgba(${r},${g},${b},0.85)`;
+  ctx.fillRect(24, 24, 16, h - 48);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 8;
+  tex.needsUpdate = true;
+
+  if (imageUrl) {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    
+    img.onload = () => {
+      ctx.clearRect(0, 0, w, h);
+      
+      ctx.fillStyle = grad;
+      ctx.fillRect(0, 0, w, h);
+      
+      try {
+        ctx.drawImage(img, 0, 0, w, h);
+      } catch (e) {
+        const iw = img.naturalWidth || img.width;
+        const ih = img.naturalHeight || img.height;
+        const scale = Math.max(w / iw, h / ih);
+        const dw = iw * scale;
+        const dh = ih * scale;
+        const dx = (w - dw) / 2;
+        const dy = (h - dh) / 2;
+        ctx.drawImage(img, dx, dy, dw, dh);
+      }
+      
+      const shade = ctx.createLinearGradient(0, 0, 0, h);
+      shade.addColorStop(0, "rgba(0,0,0,0.14)");
+      shade.addColorStop(1, "rgba(0,0,0,0.32)");
+      ctx.fillStyle = shade;
+      ctx.fillRect(0, 0, w, h);
+      
+      ctx.strokeStyle = "rgba(255,255,255,0.20)";
+      ctx.lineWidth = 10;
+      ctx.strokeRect(18, 18, w - 36, h - 36);
+      
+      ctx.fillStyle = `rgba(${r},${g},${b},0.85)`;
+      ctx.fillRect(24, 24, 16, h - 48);
+      
+      ctx.fillStyle = "rgba(255,235,59,0.95)";
+      ctx.font = "bold 26px Montserrat, sans-serif";
+      ctx.fillText("Press E to examine", 70, h - 70);
+      
+      tex.needsUpdate = true;
+    };
+    
+    img.onerror = () => {
+      ctx.fillStyle = "rgba(255,235,59,0.95)";
+      ctx.font = "bold 26px Montserrat, sans-serif";
+      ctx.fillText("Press E to examine", 70, h - 70);
+      tex.needsUpdate = true;
+    };
+    
+    img.src = imageUrl;
+  }
+
+  return { canvas, ctx, tex };
+}
+
+function createInfoBoard(dataKey, x, y, z, rotY, glowColor){
+  const data = exhibitionData[dataKey] || { title:"Information", content:"", image:"" };
+
+  const group = new THREE.Group();
+
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x1d1d1d, roughness: 0.72, metalness: 0.20 });
+  frameMat.envMapIntensity = 0.05;
+
+  const frame = new THREE.Mesh(new THREE.BoxGeometry(8.2, 5.2, 0.44), frameMat);
+  frame.castShadow = true;
+  group.add(frame);
+
+  const boardTexPack = makeBoardImageTexture(data.image, glowColor);
+  animatedObjects.boardCanvases.push(boardTexPack);
+
+  const screenMat = new THREE.MeshStandardMaterial({
+    map: boardTexPack.tex,
+    color: 0xffffff,
+    emissive: glowColor,
+    emissiveIntensity: 0.08,
+    roughness: 0.75,
+    metalness: 0.0
+  });
+  screenMat.envMapIntensity = 0.06;
+
+  const screen = new THREE.Mesh(new THREE.PlaneGeometry(7.6, 4.6), screenMat);
+  screen.position.z = 0.23;
+  group.add(screen);
+
+  const hit = new THREE.Mesh(new THREE.BoxGeometry(10, 7, 2), new THREE.MeshBasicMaterial({ visible:false }));
+  hit.userData = { isInteractable:true, key:dataKey, screenMat };
+  group.add(hit);
+
+  group.position.set(x,y,z);
+  group.rotation.y = rotY;
+  scene.add(group);
+
+  interactables.push(hit);
+  animatedObjects.boardScreens.push(screenMat);
+
+  createStaticCollider(x, y, z, 8.4, 5.4, 0.6).mesh.visible = false;
+}
+
+function setupInputListeners(){
+  document.addEventListener("keydown", (e)=>{
+    const k = e.key.toLowerCase();
+    if(k in keys) keys[k] = true;
+    if(e.code === "Space") keys.space = true;
+    if(e.key === "Shift") keys.shift = true;
+
+    if(k === "e" && currentInteractable && (isMobile || isLocked)){
+      openModal(currentInteractable.userData.key);
+    }
+  });
+
+  document.addEventListener("keyup", (e)=>{
+    const k = e.key.toLowerCase();
+    if(k in keys) keys[k] = false;
+    if(e.code === "Space") keys.space = false;
+    if(e.key === "Shift") keys.shift = false;
+  });
+
+  document.addEventListener("mousemove", (e)=>{
+    if(!isLocked) return;
+    const sens = 0.002;
+    player.yaw.rotation.y -= e.movementX * sens;
+    player.pitch.rotation.x -= e.movementY * sens;
+    player.pitch.rotation.x = clamp(player.pitch.rotation.x, -Math.PI/2, Math.PI/2);
+  });
+
+  document.addEventListener("mousedown", ()=>{
+    if(isMobile) return;
+    if(!isLocked && el("splash-screen").style.display === "none" && el("modal-container").style.display === "none"){
+      requestPointerLock();
+    }
+  });
+
+  document.addEventListener("pointerlockchange", ()=>{
+    isLocked = document.pointerLockElement === document.body;
+  });
+
+  el("close-modal").addEventListener("click", closeModal);
+
+  if(isMobile){
+    let lastTap = 0;
+    document.addEventListener("touchstart", (e)=>{
+      if(e.touches.length !== 1) return;
+      const t = e.touches[0];
+      dragLook.active = true;
+      dragLook.lastX = t.clientX;
+      dragLook.lastY = t.clientY;
+
+      const now = performance.now();
+      if(now - lastTap < 280){
+        stepForward(2.2);
+      }
+      lastTap = now;
+    }, { passive:true });
+
+    document.addEventListener("touchmove", (e)=>{
+      if(!dragLook.active || e.touches.length !== 1) return;
+      const t = e.touches[0];
+      const dx = t.clientX - dragLook.lastX;
+      const dy = t.clientY - dragLook.lastY;
+      dragLook.lastX = t.clientX;
+      dragLook.lastY = t.clientY;
+
+      const sens = 0.0032;
+      player.yaw.rotation.y -= dx * sens;
+      player.pitch.rotation.x -= dy * sens;
+      player.pitch.rotation.x = clamp(player.pitch.rotation.x, -Math.PI/2, Math.PI/2);
+    }, { passive:true });
+
+    document.addEventListener("touchend", ()=>{ dragLook.active = false; }, { passive:true });
+  }
+}
+
+function requestPointerLock(){ document.body.requestPointerLock(); }
+
+function stepForward(dist){
+  const forward = new THREE.Vector3(0,0,-1).applyEuler(new THREE.Euler(0, player.yaw.rotation.y, 0));
+  const target = player.yaw.position.clone().add(forward.multiplyScalar(dist));
+  if(!checkCollision(target)){
+    player.yaw.position.copy(target);
+  }
+}
+
+const groundRay = new THREE.Raycaster();
+const tmpBox = new THREE.Box3();
+const tmpCenter = new THREE.Vector3();
+const tmpSize = new THREE.Vector3();
+const tmpVec = new THREE.Vector3();
+
+function updatePhysics(dt){
+  const allowMove = isMobile ? true : isLocked;
+  if(!allowMove) return;
+
+  player.velocity.y -= GRAVITY * dt;
+  player.velocity.y = Math.max(player.velocity.y, -60);
+
+  groundSnap();
+
+  if(keys.space && player.onGround){
+    player.velocity.y = JUMP_FORCE;
+    player.onGround = false;
+  }
+
+  player.direction.set(0,0,0);
+  if(keys.w) player.direction.z -= 1;
+  if(keys.s) player.direction.z += 1;
+  if(keys.a) player.direction.x -= 1;
+  if(keys.d) player.direction.x += 1;
+  if(player.direction.lengthSq() > 0) player.direction.normalize();
+
+  player.direction.applyEuler(new THREE.Euler(0, player.yaw.rotation.y, 0));
+
+  const speed = keys.shift ? player.speed * player.runMultiplier : player.speed;
+
+  const nx = player.yaw.position.x + player.direction.x * speed * dt;
+  const nz = player.yaw.position.z + player.direction.z * speed * dt;
+
+  moveWithStepAxis("x", nx, dt, speed);
+  moveWithStepAxis("z", nz, dt, speed);
+
+  player.yaw.position.y += player.velocity.y * dt;
+
+  groundSnap();
+
+  if(player.yaw.position.y < -40){
+    player.yaw.position.set(0, 10, 120);
+    player.velocity.set(0,0,0);
+  }
+
+  if(player.onGround && (keys.w || keys.a || keys.s || keys.d)){
+    player.bobTimer += dt * (keys.shift ? 14 : 9);
+    player.pitch.position.y = Math.sin(player.bobTimer) * 0.07;
+  }else{
+    player.pitch.position.y += (0 - player.pitch.position.y) * 0.12;
+  }
+}
+
+function moveWithStepAxis(axis, targetValue, dt, speed){
+  const cur = player.yaw.position.clone();
+  const target = cur.clone();
+  target[axis] = targetValue;
+
+  if(!checkCollision(target)){
+    player.yaw.position[axis] = targetValue;
+    return;
+  }
+
+  if(!player.onGround) return;
+
+  tmpVec.copy(player.direction);
+  if(tmpVec.lengthSq() > 0) tmpVec.normalize();
+  tmpVec.multiplyScalar(STEP_CHECK_FORWARD);
+
+  const stepPos = cur.clone();
+  stepPos[axis] = targetValue;
+  stepPos.y += STEP_HEIGHT;
+
+  if(!checkCollision(stepPos)){
+    const yBefore = player.yaw.position.y;
+    player.yaw.position.copy(stepPos);
+
+    const ok = groundSnap(true, STEP_HEIGHT + 1.2);
+    if(ok){
+      return;
+    }
+    player.yaw.position.copy(cur);
+    player.yaw.position.y = yBefore;
+  }
+}
+
+function groundSnap(forceFar=false, customFar=null){
+  groundRay.set(player.yaw.position.clone(), new THREE.Vector3(0,-1,0));
+  groundRay.near = 0;
+  groundRay.far = customFar !== null ? customFar : (PLAYER_HEIGHT + (forceFar?2.2:1.2));
+  const hits = groundRay.intersectObjects(floors, false);
+
+  if(hits.length > 0){
+    const dist = hits[0].distance;
+    if(dist <= PLAYER_HEIGHT + 0.15 && player.velocity.y <= 0){
+      player.velocity.y = 0;
+      player.yaw.position.y = hits[0].point.y + PLAYER_HEIGHT;
+      player.onGround = true;
+      return true;
+    }
+    player.onGround = false;
+    return false;
+  }else{
+    player.onGround = false;
+    return false;
+  }
+}
+
+function checkCollision(targetPos){
+  tmpCenter.set(targetPos.x, targetPos.y - PLAYER_HEIGHT/2 + 0.55, targetPos.z);
+  tmpSize.set(PLAYER_RADIUS*2, PLAYER_HEIGHT-0.5, PLAYER_RADIUS*2);
+  tmpBox.setFromCenterAndSize(tmpCenter, tmpSize);
+
+  const candidates = getNearbyColliderIndices(targetPos);
+  for(let i=0;i<candidates.length;i++){
+    const idx = candidates[i];
+    const c = colliders[idx];
+    if(tmpBox.intersectsBox(c.box)) return true;
+  }
+  return false;
+}
+
+const interactRay = new THREE.Raycaster();
+const center = new THREE.Vector2(0,0);
+let interactFrameSkip = 0;
+
+function updateInteractions(){
+  const allow = isMobile ? true : isLocked;
+  if(!allow) return;
+
+  interactFrameSkip = (interactFrameSkip + 1) % 2;
+  if(interactFrameSkip !== 0) return;
+
+  interactRay.setFromCamera(center, camera);
+  interactRay.far = 16;
+
+  const hits = interactRay.intersectObjects(interactables, false);
+  const prompt = el("interaction-prompt");
+  const crosshair = el("crosshair");
+
+  if(hits.length > 0){
+    const obj = hits[0].object;
+    if(currentInteractable !== obj){
+      currentInteractable = obj;
+      prompt.style.display = "block";
+      crosshair.classList.add("active");
+    }
+  }else{
+    if(currentInteractable){
+      currentInteractable = null;
+      prompt.style.display = "none";
+      crosshair.classList.remove("active");
+    }
+  }
+
+  updateLocationUI();
+}
+
+function updateLocationUI(){
+  const pos = player.yaw.position;
+  const title = el("loc-title");
+  const desc = el("loc-desc");
+
+  if(pos.z > 30){
+    title.textContent = "Outdoor"; desc.textContent = "Museum Garden";
+  }else if(pos.z <= 30 && pos.z > -25){
+    title.textContent = "Entrance"; desc.textContent = "Welcome Area";
+  }else if(pos.z <= -25 && pos.x < -10){
+    title.textContent = "Gallery"; desc.textContent = "Nature & Adaptation";
+  }else if(pos.z <= -25 && pos.x > 10){
+    title.textContent = "Gallery"; desc.textContent = "Energy & Solutions";
+  }else{
+    title.textContent = "Exhibition"; desc.textContent = "Climate Literacy";
+  }
+}
+
+function openModal(key){
+  const data = exhibitionData[key];
+  if(!data) return;
+
+  el("modal-title").textContent = data.title;
+  const img = data.image ? `<img src="${data.image}" alt="${escapeHtml(data.title)}">` : "";
+  el("modal-content").innerHTML = `${img}${data.content}`;
+
+  el("modal-container").style.display = "flex";
+  el("modal-container").classList.add("show");
+
+  if(!isMobile) document.exitPointerLock();
+}
+
+function closeModal(){
+  el("modal-container").classList.remove("show");
+  el("modal-container").style.display = "none";
+  if(!isMobile) requestPointerLock();
+}
+
+function animate(){
+  requestAnimationFrame(animate);
+
+  const dt = Math.min(clock.getDelta(), 0.033);
+  updatePhysics(dt);
+
+  animatedObjects.windTurbines.forEach(rotor=>{
+    rotor.rotation.z += 1.55 * dt;
+  });
+
+  if(animatedObjects.water){
+    animatedObjects.water.rotation.z += 0.03 * dt;
+  }
+
+  const t = performance.now() * 0.001;
+  animatedObjects.boardScreens.forEach((m, i)=>{
+    const base = 0.06;
+    const pulse = 0.03 * (0.5 + 0.5*Math.sin(t*1.4 + i));
+    m.emissiveIntensity = base + pulse;
+  });
+
+  updateInteractions();
+  composer.render();
+
+  frames++;
+  const now = performance.now();
+  if(now >= prevTime + 1000){
+    const fps = Math.round((frames * 1000) / (now - prevTime));
+    el("fps-counter").textContent = `FPS: ${fps}`;
+    avgFps = avgFps*0.7 + fps*0.3;
+
+    if(avgFps < 45 && dynamicScale > 0.72){
+      dynamicScale = Math.max(0.72, dynamicScale - 0.06);
+      applyPixelRatio();
+      el("quality-badge").textContent = "Medium";
+    }else if(avgFps > 58 && dynamicScale < 1.0){
+      dynamicScale = Math.min(1.0, dynamicScale + 0.04);
+      applyPixelRatio();
+      el("quality-badge").textContent = "High";
+    }
+
+    frames = 0;
+    prevTime = now;
+  }
+}
+
+function applyPixelRatio(){
+  renderer.setPixelRatio(targetPixelRatio * dynamicScale);
+  composer.setSize(window.innerWidth, window.innerHeight);
+
+  const lastPass = composer.passes[composer.passes.length - 1];
+  if(lastPass && lastPass.material && lastPass.material.uniforms && lastPass.material.uniforms["resolution"]){
+    lastPass.material.uniforms["resolution"].value.set(
+      1/(window.innerWidth*renderer.getPixelRatio()),
+      1/(window.innerHeight*renderer.getPixelRatio())
+    );
+  }
+}
+
+function onResize(){
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  composer.setSize(window.innerWidth, window.innerHeight);
+  applyPixelRatio();
+}
+
+function clamp(v,a,b){ return Math.max(a, Math.min(b, v)); }
+function escapeHtml(s){
+  return String(s||"")
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"quot;")
+    .replaceAll("'","&#039;");
+}
+</script>
+</body>
+</html>
